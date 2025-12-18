@@ -47,7 +47,7 @@ class MapObject:
     self.pos = pg.Vector2(x, y)
     self.size = pg.Vector2(1, 1)
     self.img = {'test': pg.image.load(
-        './image/object/test.png'), 'floor': pg.image.load('./image/object/test.png')}
+        './image/object/test.png'), 'floor': pg.image.load('./image/object/floor.png')}
 
   def draw(self, screen, type):  # 描画関数
     dot_size = 32
@@ -57,7 +57,7 @@ class MapObject:
 def main():
   pg.init()
   dot_size = 32
-  map_size = pg.Vector2(35, 30)
+  map_size = pg.Vector2(25, 20)
   screen = pg.display.set_mode(
       (int(dot_size * map_size.x), int(dot_size * map_size.y)))
   clock = pg.time.Clock()
@@ -66,9 +66,9 @@ def main():
   MapObj = [MapObject(10, 10), MapObject(11, 10), MapObject(12, 10),
             MapObject(10, 11), MapObject(11, 11), MapObject(12, 11)]
   Floor = []
-  for x in range(35):
-    for y in range(20):
-      Floor.append(MapObject(x, 30 - y))
+  for x in range(25):
+    for y in range(13):
+      Floor.append(MapObject(x, 20 - y))
 
 # ↓ゲームスクリプト
   while not exit_game:

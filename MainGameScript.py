@@ -15,12 +15,14 @@ class Character:
     screen.blit(self.charaImg[self.dir],
                 (self.pos.x * dot_size, self.pos.y * dot_size))
 
-  def can_move(self, after_pos):  # 移動できるのか確認する関数
-    if (0 <= after_pos.x < 40) and (0 <= after_pos.y < 40):
-      return True
-    return False
+  def can_move(self, after_pos, MapObject):  # 移動できるのか確認する関数
+    for i in range(len(MapObject)):
+      if ((0 <= after_pos.x < 40) and (0 <= after_pos.y < 40)) and after_pos != MapObject[i].pos:
+        answer = True
+      else: answer = False
+    return answer
 
-  def move(self, event):  # 移動関数
+  def move(self, event, MapObject):  # 移動関数
     Moving = [pg.Vector2(0, 1), pg.Vector2(-1, 0),
               pg.Vector2(0, -1), pg.Vector2(1, 0)]
     if event.type == pg.KEYDOWN:
@@ -32,8 +34,19 @@ class Character:
         self.dir = 2
       elif event.key == pg.K_d:
         self.dir = 3
-      if self.can_move(self.pos + Moving[self.dir]):
+      if self.can_move(self.pos + Moving[self.dir], MapObject):
         self.pos += Moving[self.dir]
+
+class MapObject:
+  def __init__(self, x, y):
+    self.pos = pg.Vector2(x, y)
+    self.size = pg.Vector2(1, 1)
+    self.img = pg.image.load('./image/object/test.png')
+
+  def draw(self, screen):  # 描画関数
+    dot_size = 32
+    screen.blit(self.img,
+                (self.pos.x * dot_size, self.pos.y * dot_size))
 
 def main():
   pg.init()
@@ -44,6 +57,8 @@ def main():
   clock = pg.time.Clock()
   exit_game = False
   MainCharacter = Character(5, 5)
+  MapObj = [MapObject(10, 10), MapObject(11, 10), MapObject(12, 10),
+            MapObject(10, 11), MapObject(11, 11), MapObject(12, 11)]
 
 # ↓ゲームスクリプト
   while not exit_game:
@@ -51,8 +66,10 @@ def main():
     for event in pg.event.get():
       if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
         exit_game = True
-      MainCharacter.move(event)
+      MainCharacter.move(event, MapObj)
     MainCharacter.draw(screen)
+    for obj in MapObj:
+      obj.draw(screen)
 # ↑ゲームスクリプト
     pg.display.update()
     clock.tick(20)

@@ -64,14 +64,20 @@ class MapObject:
 
   @classmethod
   def load_images(cls):
-    cls.images['test'] = pg.image.load(
-        './image/object/test.png').convert_alpha()
     cls.images['floor'] = pg.image.load(
         './image/object/floor.png').convert_alpha()
     cls.images['bed'] = pg.image.load(
         './image/object/bed.png').convert_alpha()
     cls.images['door'] = pg.image.load(
         './image/object/door.png').convert_alpha()
+    cls.images['deskR'] = pg.image.load(
+        './image/object/desk_right.png').convert_alpha()
+    cls.images['deskL'] = pg.image.load(
+        './image/object/desk_left.png').convert_alpha()
+    cls.images['wall'] = pg.image.load(
+        './image/object/wall.png').convert_alpha()
+    cls.images['Room_door_close'] = pg.image.load(
+        './image/object/room_door_close.png').convert_alpha()
 
   def draw(self, screen, type):
     dot_size = 32
@@ -85,7 +91,13 @@ def text_talk(screen, font, texts):
   screen.blit(texts, (30, 525))
   pg.display.update()
   pg.time.delay(1000)
-
+# アイテム確認
+def text_item(screen, font, item):
+  pg.draw.rect(screen, (0, 0, 0), pg.Rect(0, 500, 800, 100))
+  item_text = "所持品: " + ", ".join(item) if item else "所持品は何もない。"
+  texts = font.render(item_text, True, (255, 255, 255))
+  screen.blit(texts, (30, 525))
+  pg.display.update()
 
 def main():
   pg.init()
@@ -99,23 +111,34 @@ def main():
   text_i = 0
   # 所持品リスト
   item = []
+  # アイテム確認用変数
+  item_line = False
 
   MapObject.load_images()
   # プレイヤー
   player = Character(23, 18)
-  # テスト用オブジェクト
-  map_objs = [MapObject(10, 10), MapObject(11, 10), MapObject(12, 10)]
   # 床
   floors = [MapObject(x, y) for x in range(25) for y in range(8, 20)]
   # ベッド
   bed = MapObject(24, 17)
-  # ドア
+  # 玄関
   door = MapObject(15, 6)
+  # 机
+  deskR = MapObject(13, 18)
+  deskL = MapObject(12, 18)
+  desk = [deskR, deskL]
+  # 仕切り壁
+  walls = []
+  for y in range(3, 19):
+    if y != 13:
+      walls.append(MapObject(11, y))
+  # 部屋区切りドア
+  RoomDoor = MapObject(11, 13)
   # フォント
   font_title = pg.font.SysFont('mspgothic', 50)
   font_text = pg.font.SysFont('mspgothic', 25)
   # ぶつかるオブジェクト
-  Map_Object_Block = map_objs + [bed] + [door]
+  Map_Object_Block = [bed] + [door] + desk + walls + [RoomDoor]
 
   while True:
     for event in pg.event.get():
@@ -133,15 +156,14 @@ def main():
         # ゲーム内の調べるキー行動
         elif state == 2 and event.key == pg.K_e:
             # ドアの判定
-          if player.pos == pg.Vector2(15, 8):
-            if '鍵' not in item:
+          if player.pos == pg.Vector2(15, 8) and player.dir == 2:
+            if '玄関の鍵らしきもの' not in item:
               text_talk(screen, font_text, "鍵がかかっている。")
             # else: 脱出処理追加予定地
         # アイテム確認
         elif state == 2 and event.key == pg.K_q:
-          text = "所持品: " + ", ".join(item) if item else "所持品は何もない。"
-          text_talk(screen, font_text, text)
-        # ゲーム終了
+          item_line = not item_line
+          # ゲーム終了
         if event.key == pg.K_ESCAPE:
           pg.quit()
           sys.exit()
@@ -155,6 +177,7 @@ def main():
           "Press SPACE to start", True, (255, 255, 255))
       screen.blit(text, (80, 200))
       screen.blit(explain, (300, 400))
+    # 導入テキスト
     elif state == 1:
       screen.fill((0, 0, 0))
       texts = ['「ここは...？」',
@@ -171,16 +194,25 @@ def main():
       screen.fill((150, 150, 150))
       for f in floors:
         f.draw(screen, 'floor')
-      for obj in map_objs:
-        obj.draw(screen, 'test')
       bed.draw(screen, 'bed')
       door.draw(screen, 'door')
+      for d in desk:
+        if d == deskR:
+          d.draw(screen, 'deskR')
+        else:
+          d.draw(screen, 'deskL')
+      for w in walls:
+        w.draw(screen, 'wall')
+      RoomDoor.draw(screen, 'Room_door_close')
       player.draw(screen)
+      # 所持品表示
+      if item_line == True:
+        text_item(screen, font_text, item)
       # 確認用座標表示
       print(player.pos)
 
     pg.display.update()
-    clock.tick(10)
+    clock.tick(15)
 
 if __name__ == '__main__':
   main()

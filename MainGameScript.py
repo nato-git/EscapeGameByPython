@@ -82,6 +82,8 @@ class MapObject:
         './image/object/room_door_open.png').convert_alpha()
     cls.images['freezer'] = pg.image.load(
         './image/object/freezer.png').convert_alpha()
+    cls.images['chair'] = pg.image.load(
+        './image/object/chair.png').convert_alpha()
 
   def draw(self, screen, type):
     dot_size = 32
@@ -98,7 +100,7 @@ def text_talk(screen, font, texts):
 # アイテム確認
 def text_item(screen, font, item):
   pg.draw.rect(screen, (0, 0, 0), pg.Rect(0, 500, 800, 100))
-  item_text = "所持品: " + ", ".join(item) if item else "所持品は何もない。"
+  item_text = "所持品: " + ", ".join(item) if item else "何も持っていない"
   texts = font.render(item_text, True, (255, 255, 255))
   screen.blit(texts, (30, 525))
   pg.display.update()
@@ -142,6 +144,8 @@ def main():
   RoomDoor = MapObject(11, 13)
   # 冷蔵庫
   Freezer = MapObject(10, 7)
+  # 椅子
+  chair = MapObject(12, 17)
   # フォント
   font_title = pg.font.SysFont('mspgothic', 50)
   font_text = pg.font.SysFont('mspgothic', 25)
@@ -169,9 +173,12 @@ def main():
               text_talk(screen, font_text, "鍵がかかっている。")
             # else: 脱出処理追加予定地
           if player.pos == pg.Vector2(12, 13) and player.dir == 1 and Door_condi == True:
-            text_talk(screen, font_text, "鍵が開いた")
-            Door_condi = False
-            Map_Object_Block.remove(RoomDoor)
+            if '部屋の鍵' not in item:
+              text_talk(screen, font_text, "鍵がかかっている。")
+            else:
+              text_talk(screen, font_text, "鍵が開いた")
+              Door_condi = False
+              Map_Object_Block.remove(RoomDoor)
         # アイテム確認
         elif state == 2 and event.key == pg.K_q:
           item_line = not item_line
@@ -208,6 +215,7 @@ def main():
         f.draw(screen, 'floor')
       bed.draw(screen, 'bed')
       door.draw(screen, 'door')
+      chair.draw(screen, 'chair')
       for d in desk:
         if d == deskR:
           d.draw(screen, 'deskR')

@@ -1,8 +1,6 @@
 import pygame as pg
 import sys
 
-print(pg.font.get_fonts())
-
 class Character:
   def __init__(self, x, y):
     self.pos = pg.Vector2(x, y)
@@ -84,6 +82,8 @@ class MapObject:
         './image/object/freezer.png').convert_alpha()
     cls.images['chair'] = pg.image.load(
         './image/object/chair.png').convert_alpha()
+    cls.images['bookstand'] = pg.image.load(
+        './image/object/bookstand.png').convert_alpha()
 
   def draw(self, screen, type):
     dot_size = 32
@@ -132,25 +132,28 @@ def main():
   # 玄関
   door = MapObject(15, 6)
   # 机
-  deskR = MapObject(13, 18)
-  deskL = MapObject(12, 18)
+  deskR = MapObject(5, 14)
+  deskL = MapObject(4, 14)
   desk = [deskR, deskL]
   # 仕切り壁
   walls = []
-  for y in range(3, 19):
+  for y in range(4, 19):
     if y != 13:
       walls.append(MapObject(11, y))
   # 部屋区切りドア
   RoomDoor = MapObject(11, 13)
   # 冷蔵庫
-  Freezer = MapObject(10, 7)
+  Freezer = MapObject(0, 7)
   # 椅子
-  chair = MapObject(12, 17)
+  chair = MapObject(4.45, 13)
+  # 本棚
+  bookbox = [MapObject(24, 7), MapObject(23, 7)]
   # フォント
   font_title = pg.font.SysFont('mspgothic', 50)
   font_text = pg.font.SysFont('mspgothic', 25)
   # ぶつかるオブジェクト
-  Map_Object_Block = [bed] + [door] + desk + walls + [RoomDoor] + [Freezer]
+  Map_Object_Block = [bed] + [door] + desk + \
+      walls + [RoomDoor] + [Freezer] + bookbox
 
   while True:
     for event in pg.event.get():
@@ -167,11 +170,12 @@ def main():
             text_i = 0
         # ゲーム内の調べるキー行動
         elif state == 2 and event.key == pg.K_e:
-            # ドアの判定
+            # 玄関ドアの判定
           if player.pos == pg.Vector2(15, 8) and player.dir == 2:
             if '玄関の鍵らしきもの' not in item:
               text_talk(screen, font_text, "鍵がかかっている。")
             # else: 脱出処理追加予定地
+            # 区切りドアの判定
           if player.pos == pg.Vector2(12, 13) and player.dir == 1 and Door_condi == True:
             if '部屋の鍵' not in item:
               text_talk(screen, font_text, "鍵がかかっている。")
@@ -221,6 +225,8 @@ def main():
           d.draw(screen, 'deskR')
         else:
           d.draw(screen, 'deskL')
+      for b in bookbox:
+        b.draw(screen, 'bookstand')
       for w in walls:
         w.draw(screen, 'wall')
         if Door_condi == True:

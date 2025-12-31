@@ -1,10 +1,17 @@
 import pygame as pg
 import sys
 
+# --- 設定定数 ---
+DOT_SIZE = 48
+MAP_WIDTH = 20
+MAP_HEIGHT = 15
+SCREEN_W = DOT_SIZE * MAP_WIDTH   # 960
+SCREEN_H = DOT_SIZE * MAP_HEIGHT  # 720
+
 class Character:
   def __init__(self, x, y):
     self.pos = pg.Vector2(x, y)
-    self.dir = 1  # 0:下, 1:左, 2:上, 3:右
+    self.dir = 0  # 0:下, 1:左, 2:上, 3:右
     self.is_moving = False
     self.anime_count = 0.0
     self.charaImg = []
@@ -17,7 +24,6 @@ class Character:
           f'./image/character/characterWalking{j}.png').convert_alpha())
 
   def draw(self, screen):
-    dot_size = 32
     if self.is_moving:
       self.anime_count += 0.2
       walk_index = (self.dir * 2) + (int(self.anime_count) % 2)
@@ -25,11 +31,13 @@ class Character:
     else:
       self.anime_count = 0
       current_img = self.charaImg[self.dir]
-    screen.blit(current_img, (self.pos.x * dot_size,
-                self.pos.y * dot_size - dot_size))
+
+    draw_x = self.pos.x * DOT_SIZE
+    draw_y = self.pos.y * DOT_SIZE - (current_img.get_height() - DOT_SIZE)
+    screen.blit(current_img, (draw_x, draw_y))
 
   def can_move(self, after_pos, MapObjectList):
-    if not (0 <= after_pos.x < 25 and 8 <= after_pos.y < 19):
+    if not (0 <= after_pos.x < MAP_WIDTH and 5 <= after_pos.y < MAP_HEIGHT):
       return False
     for obj in MapObjectList:
       if after_pos == obj.pos:
@@ -62,188 +70,139 @@ class MapObject:
 
   @classmethod
   def load_images(cls):
-    cls.images['floor'] = pg.image.load(
-        './image/object/floor.png').convert_alpha()
-    cls.images['bed'] = pg.image.load(
-        './image/object/bed.png').convert_alpha()
-    cls.images['door'] = pg.image.load(
-        './image/object/door.png').convert_alpha()
+    objs = ['floor', 'bed', 'door', 'wall', 'freezer', 'chair', 'bookstand']
+    for o in objs:
+      cls.images[o] = pg.image.load(
+          f'./image/object/{o}.png').convert_alpha()
     cls.images['deskR'] = pg.image.load(
         './image/object/desk_right.png').convert_alpha()
     cls.images['deskL'] = pg.image.load(
         './image/object/desk_left.png').convert_alpha()
-    cls.images['wall'] = pg.image.load(
-        './image/object/wall.png').convert_alpha()
     cls.images['Room_door_close'] = pg.image.load(
         './image/object/room_door_close.png').convert_alpha()
     cls.images['Room_door_open'] = pg.image.load(
         './image/object/room_door_open.png').convert_alpha()
-    cls.images['freezer'] = pg.image.load(
-        './image/object/freezer.png').convert_alpha()
-    cls.images['chair'] = pg.image.load(
-        './image/object/chair.png').convert_alpha()
-    cls.images['bookstand'] = pg.image.load(
-        './image/object/bookstand.png').convert_alpha()
 
   def draw(self, screen, type):
-    dot_size = 32
     screen.blit(self.images[type], (self.pos.x *
-                dot_size, self.pos.y * dot_size))
+                DOT_SIZE, self.pos.y * DOT_SIZE))
 
-# 調べたときのテキスト表示
 def text_talk(screen, font, texts):
-  pg.draw.rect(screen, (0, 0, 0), pg.Rect(0, 500, 800, 100))
-  texts = font.render(texts, True, (255, 255, 255))
-  screen.blit(texts, (30, 525))
+  rect_h = 120
+  pg.draw.rect(screen, (0, 0, 0), pg.Rect(
+      0, SCREEN_H - rect_h, SCREEN_W, rect_h))
+  pg.draw.rect(screen, (255, 255, 255), pg.Rect(
+      0, SCREEN_H - rect_h, SCREEN_W, rect_h), 2)
+  msg = font.render(texts, True, (255, 255, 255))
+  screen.blit(msg, (30, SCREEN_H - rect_h + 40))
   pg.display.update()
-  pg.time.delay(1000)
-# アイテム確認
-def text_item(screen, font, item):
-  pg.draw.rect(screen, (0, 0, 0), pg.Rect(0, 500, 800, 100))
-  item_text = "所持品: " + ", ".join(item) if item else "何も持っていない"
-  texts = font.render(item_text, True, (255, 255, 255))
-  screen.blit(texts, (30, 525))
-  pg.display.update()
+  pg.time.delay(800)
 
 def main():
   pg.init()
-  screen = pg.display.set_mode((800, 600))
+  screen = pg.display.set_mode((SCREEN_W, SCREEN_H))
   pg.display.set_caption("家に帰りたい。")
   clock = pg.time.Clock()
 
-  # 状態管理（0: タイトル, 1: ゲーム本編）
   state = 0
-  # テキスト表示用変数
   text_i = 0
-  # 所持品リスト
   item = []
-  # アイテム確認用変数
-  item_line = False
-  # 部屋区切りドアの状態管理変数
-  Door_condi = True  # True:閉, False:開
-
+  Door_condi = True
   MapObject.load_images()
-  # プレイヤー
-  player = Character(23, 18)
+
+  # マップオブジェクト配置
   # 床
-  floors = [MapObject(x, y) for x in range(25) for y in range(8, 20)]
-  # ベッド
-  bed = MapObject(24, 17)
-  # 玄関
-  door = MapObject(15, 6)
-  # 机
-  deskR = MapObject(5, 14)
-  deskL = MapObject(4, 14)
-  desk = [deskR, deskL]
-  # 仕切り壁
+  floors = []
+  for x in range(20):
+    for y in range(5, 15):
+      floors.append(MapObject(x, y))
   walls = []
-  for y in range(4, 19):
-    if y != 13:
-      walls.append(MapObject(11, y))
-  # 部屋区切りドア
-  RoomDoor = MapObject(11, 13)
-  # 冷蔵庫
-  Freezer = MapObject(0, 7)
-  # 椅子
-  chair = MapObject(4.45, 13)
-  # 本棚
-  bookbox = [MapObject(24, 7), MapObject(23, 7)]
-  # フォント
+  for y in range(1, 15):
+    if y != 8:
+      walls.append(MapObject(9, y))
+  # 中央ドア
+  RoomDoor = MapObject(9, 8)
+
+  deskL = MapObject(3, 11)
+  deskR = MapObject(4, 11)  # 中央の机
+  chair = MapObject(3.5, 10)  # 椅子
+
+  exit_door = MapObject(13, 3)  # 玄関ドア
+  bookbox = [MapObject(19, 4), MapObject(18, 4)]
+  bed = MapObject(19, 13)  # 右下のベッド
+
+  # プレイヤー初期位置
+  player = Character(14, 8)
+
+  # 衝突リスト
+  Map_Object_Block = walls + [RoomDoor, exit_door, bed, chair,
+                              deskL, deskR]
+
   font_title = pg.font.SysFont('mspgothic', 50)
-  font_text = pg.font.SysFont('mspgothic', 25)
-  # ぶつかるオブジェクト
-  Map_Object_Block = [bed] + [door] + desk + \
-      walls + [RoomDoor] + [Freezer] + bookbox
+  font_text = pg.font.SysFont('mspgothic', 24)
 
   while True:
+    print(player.pos)
     for event in pg.event.get():
       if event.type == pg.QUIT:
         pg.quit()
         sys.exit()
       if event.type == pg.KEYDOWN:
         if state == 0 and event.key == pg.K_SPACE:
-          state = 1  # ゲーム開始
+          state = 1
         elif state == 1 and event.key == pg.K_SPACE:
           text_i += 1
           if text_i >= 6:
-            state = 2  # ゲーム本編へ
+            state = 2
             text_i = 0
-        # ゲーム内の調べるキー行動
-        elif state == 2 and event.key == pg.K_e:
-            # 玄関ドアの判定
-          if player.pos == pg.Vector2(15, 8) and player.dir == 2:
-            if '玄関の鍵らしきもの' not in item:
+        elif state == 2:
+          if event.key == pg.K_e:
+            # 玄関
+            if player.pos == pg.Vector2(13, 1) and player.dir == 2:
               text_talk(screen, font_text, "鍵がかかっている。")
-            # else: 脱出処理追加予定地
-            # 区切りドアの判定
-          if player.pos == pg.Vector2(12, 13) and player.dir == 1 and Door_condi == True:
-            if '部屋の鍵' not in item:
-              text_talk(screen, font_text, "鍵がかかっている。")
-            else:
-              text_talk(screen, font_text, "鍵が開いた")
+            # 仕切りドア
+            if player.pos == pg.Vector2(10, 8) and player.dir == 1 and Door_condi:
+              text_talk(screen, font_text, "扉が開いた。")
               Door_condi = False
-              Map_Object_Block.remove(RoomDoor)
-        # アイテム確認
-        elif state == 2 and event.key == pg.K_q:
-          item_line = not item_line
-          # ゲーム終了
-        if event.key == pg.K_ESCAPE:
-          pg.quit()
-          sys.exit()
+              if RoomDoor in Map_Object_Block: Map_Object_Block.remove(
+                  RoomDoor)
+        if event.key == pg.K_ESCAPE: pg.quit(); sys.exit()
 
     if state == 0:
-      # スタート画面
       screen.fill((0, 0, 0))
-      text = font_title.render("家に帰りたい。",
-                               True, (255, 255, 255))
-      explain = font_text.render(
-          "Press SPACE to start", True, (255, 255, 255))
-      screen.blit(text, (80, 200))
-      screen.blit(explain, (300, 400))
-    # 導入テキスト
+      screen.blit(font_title.render("家に帰りたい。", True,
+                  (255, 255, 255)), (SCREEN_W // 2 - 150, 250))
+      screen.blit(font_text.render("Press SPACE to start", True,
+                  (255, 255, 255)), (SCREEN_W // 2 - 120, 400))
     elif state == 1:
       screen.fill((0, 0, 0))
-      texts = ['「ここは...？」',
-               '太陽の光を感じて目が覚める。',
-               '目を開けてみると、そこは見覚えのない部屋だった。',
-               '(誘拐事件か...!?)',
-               'どうやら今はこの部屋に誰もいないようだ',
-               '(ここに俺を連れてきた犯人が帰ってくる前に脱出しなければ...)']
-      text = font_text.render(texts[text_i], True, (255, 255, 255))
-      screen.blit(text, (30, 200))
+      texts = ['「ここは...？」', '太陽の光を感じて目が覚める。', '見覚えのない部屋だ。',
+               '(誘拐か...？)', '誰もいないようだ。', '(犯人が来る前に逃げよう。)']
+      screen.blit(font_text.render(
+          texts[text_i], True, (255, 255, 255)), (80, 300))
     elif state == 2:
-      # ゲーム本編
       player.update(Map_Object_Block)
-      screen.fill((150, 150, 150))
+      screen.fill((100, 100, 100))
       for f in floors:
         f.draw(screen, 'floor')
-      bed.draw(screen, 'bed')
-      door.draw(screen, 'door')
-      chair.draw(screen, 'chair')
-      for d in desk:
-        if d == deskR:
-          d.draw(screen, 'deskR')
-        else:
-          d.draw(screen, 'deskL')
-      for b in bookbox:
-        b.draw(screen, 'bookstand')
       for w in walls:
         w.draw(screen, 'wall')
-        if Door_condi == True:
-          RoomDoor.draw(screen, 'Room_door_close')
-        else:
-          RoomDoor.draw(screen, 'Room_door_open')
-      Freezer.draw(screen, 'freezer')
+      deskL.draw(screen, 'deskL')
+      deskR.draw(screen, 'deskR')
+      chair.draw(screen, 'chair')
+      exit_door.draw(screen, 'door')
+      bed.draw(screen, 'bed')
+      for b in bookbox:
+        b.draw(screen, 'bookstand')
 
+      if Door_condi:
+        RoomDoor.draw(screen, 'Room_door_close')
+      else:
+        RoomDoor.draw(screen, 'Room_door_open')
       player.draw(screen)
-      # 所持品表示
-      if item_line == True:
-        text_item(screen, font_text, item)
-      # 確認用座標表示
-      print(player.pos)
 
     pg.display.update()
-    clock.tick(15)
+    clock.tick(12)
 
 if __name__ == '__main__':
   main()

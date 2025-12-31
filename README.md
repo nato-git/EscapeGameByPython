@@ -20,7 +20,8 @@
 ## 制作について
 
 このゲームは python の pygame で制作しています。<br>
-ゲーム中のイラストは私が描いたもの、もしくは AI が描いたものです。他の方のイラストの使用はしておりません。
+ゲーム中のイラストは以下のものを使用させていただきました。<br>
+コミュ将 https://twitter.com/com_sho_sozai - [キャラクターの部屋](https://graphic.fungamemake.com/archives/2387)
 
 ---
 

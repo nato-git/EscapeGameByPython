@@ -254,7 +254,7 @@ def main():
               else:
                 text_talk(screen, font_text, "もう何もない。")
             elif player.pos == pg.Vector2(19, 6) and player.dir == 2:
-              if Door_condi == True:
+              if Door_condi == False:
                 text_talk(screen, font_text, "私好みの小説がおいてある。気味が悪い。")
               else:
                 text_talk(screen, font_text, "左から、赤、緑、紫、茶色の背表紙の本が入ってある。")

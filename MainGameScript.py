@@ -70,7 +70,12 @@ class MapObject:
 
   @classmethod
   def load_images(cls):
-    objs = ['floor', 'bed', 'door', 'wall', 'freezer', 'chair', 'bookstand']
+    objs = ['floor', 'bed', 'door', 'wall',
+            'freezer', 'chair', 'bookstand',
+            'dustbox', 'kitchen1', 'kitchen2',
+            'kitchen3', 'door_desk', 'paper',
+            'mirror', 'calender', 'TV', 'moneybox',
+            'closet']
     for o in objs:
       cls.images[o] = pg.image.load(
           f'./image/object/{o}.png').convert_alpha()
@@ -96,7 +101,36 @@ def text_talk(screen, font, texts):
   msg = font.render(texts, True, (255, 255, 255))
   screen.blit(msg, (30, SCREEN_H - rect_h + 40))
   pg.display.update()
-  pg.time.delay(800)
+  pg.time.delay(1000)
+
+def item_look(screen, font, items):
+  rect_h = 120
+  pg.draw.rect(screen, (0, 0, 0), pg.Rect(
+      0, SCREEN_H - rect_h, SCREEN_W, rect_h))
+  pg.draw.rect(screen, (255, 255, 255), pg.Rect(
+      0, SCREEN_H - rect_h, SCREEN_W, rect_h), 2)
+  item_msg = font.render(
+      f"持っているアイテム: {', '.join(items) if items else '持っているアイテムはない。'}", True, (255, 255, 255))
+  screen.blit(item_msg, (30, SCREEN_H - rect_h + 30))
+  pg.display.update()
+
+def number(screen, font, texts, event):
+  rect_h = 120
+  pg.draw.rect(screen, (0, 0, 0), pg.Rect(
+      0, SCREEN_H - rect_h, SCREEN_W, rect_h))
+  pg.draw.rect(screen, (255, 255, 255), pg.Rect(
+      0, SCREEN_H - rect_h, SCREEN_W, rect_h), 2)
+  if len(texts) < 4:
+    if event.unicode.isdigit():
+      texts += event.unicode
+  if event.key == pg.K_BACKSPACE:
+    texts -= texts[-1]
+  if event.key == pg.K_RETURN:
+    return texts
+  number_msg = font.render(f"{texts}", True, (255, 255, 255))
+  screen.blit(number_msg, (30, SCREEN_H - rect_h + 30))
+  pg.display.update()
+
 
 def main():
   pg.init()
@@ -107,7 +141,12 @@ def main():
   state = 0
   text_i = 0
   item = []
+  item_condi = False
   Door_condi = True
+  closet_condi = False
+  money_number = []
+  small_box = []
+  number_condi = False
   MapObject.load_images()
 
   # マップオブジェクト配置
@@ -126,17 +165,36 @@ def main():
   deskL = MapObject(3, 11)
   deskR = MapObject(4, 11)  # 中央の机
   chair = MapObject(3.5, 10)  # 椅子
+  freezer = MapObject(0, 4)  # 冷蔵庫
+  kitchen1 = MapObject(2, 5)  # キッチン
+  kitchen2 = MapObject(3, 5)
+  kitchen3 = MapObject(4, 5)
+  TV = MapObject(8, 14)  # テレビ
+  closet = MapObject(8, 6)  # クローゼット
+  moneybox = MapObject(0, 14)  # 金庫
 
   exit_door = MapObject(13, 3)  # 玄関ドア
   bookbox = [MapObject(19, 4), MapObject(18, 4)]
   bed = MapObject(19, 13)  # 右下のベッド
+  door_desk = MapObject(12, 5)  # 机上のドア
+  dustbox = [MapObject(17, 5), MapObject(1, 5)]  # ゴミ箱
+  paper = MapObject(12.2, 5)  # 机上の紙
+  mirror = MapObject(15, 4)  # 鏡
+  calender = MapObject(19, 10)  # カレンダー
 
   # プレイヤー初期位置
-  player = Character(14, 8)
+  player = Character(18, 14)
 
   # 衝突リスト
-  Map_Object_Block = walls + [RoomDoor, exit_door, bed, chair,
-                              deskL, deskR]
+  Map_Object_Block = walls + \
+      [RoomDoor, exit_door, chair, deskL, deskR, door_desk, TV, moneybox] + \
+      dustbox + \
+      [MapObject(19, 5), MapObject(18, 5)] + \
+      [kitchen1, kitchen2, kitchen3] + \
+      [MapObject(15, 5)] + \
+      [MapObject(8, 7), MapObject(8, 6)] + \
+      [MapObject(0, 5)] + \
+      [MapObject(19, 14), MapObject(19, 13)]
 
   font_title = pg.font.SysFont('mspgothic', 50)
   font_text = pg.font.SysFont('mspgothic', 24)
@@ -156,17 +214,98 @@ def main():
             state = 2
             text_i = 0
         elif state == 2:
+          if event.key == pg.K_q:
+            item_condi = not item_condi
           if event.key == pg.K_e:
+            # ベッド
+            if player.pos == pg.Vector2(18, 14) and player.dir == 3:
+              text_talk(screen, font_text, "ベッドだ。なぜかここで寝ていた。")
+            elif (player.pos == pg.Vector2(18, 13) and player.dir == 3) or (player.pos == pg.Vector2(19, 12) and player.dir == 0):
+              if "棒磁石" not in item:
+                text_talk(screen, font_text, "棒磁石が落ちている。棒磁石を手に入れた。")
+                item.append("棒磁石")
+              else:
+                text_talk(screen, font_text, "もう何もない。")
+            # カレンダー
+            elif player.pos == pg.Vector2(19, 10) and player.dir == 3:
+              text_talk(screen, font_text, "カレンダーだ。知らない元号が書いてある。")
+              text_talk(screen, font_text, "私の誕生日はクリスマスだったので、ひとつにまとめられていたな。")
+            # 本棚
+            elif player.pos == pg.Vector2(18, 6) and player.dir == 2:
+              if "部屋の鍵" not in item:
+                text_talk(screen, font_text, "本棚の隙間に何かある。部屋の鍵を手に入れた。")
+                item.append("部屋の鍵")
+              else:
+                text_talk(screen, font_text, "もう何もない。")
+            elif player.pos == pg.Vector2(19, 6) and player.dir == 2:
+              if Door_condi == True:
+                text_talk(screen, font_text, "私好みの小説がおいてある。気味が悪い。")
+              else:
+                text_talk(screen, font_text, "左から、赤、緑、紫、茶色の背表紙の本が入ってある。")
+            # ゴミ箱1
+            elif (player.pos == pg.Vector2(17, 6) and player.dir == 2) or (player.pos == pg.Vector2(16, 5) and player.dir == 3):
+              text_talk(screen, font_text, "ゴミ箱だ。薬のゴミとティッシュが入っている。")
+            # 鏡
+            elif (player.pos == pg.Vector2(15, 6) and player.dir == 2) or (player.pos == pg.Vector2(14, 5) and player.dir == 3) or (player.pos == pg.Vector2(16, 5) and player.dir == 1):
+              text_talk(screen, font_text, "鏡だ。今は見る必要がない。")
+            # 机上の紙
+            elif (player.pos == pg.Vector2(12, 6) and player.dir == 2) or (player.pos == pg.Vector2(13, 5) and player.dir == 1) or (player.pos == pg.Vector2(11, 5) and player.dir == 3):
+              text_talk(screen, font_text, "メモのようだ。「〇月×日 病院に行く」と書かれている。")
             # 玄関
-            if player.pos == pg.Vector2(13, 1) and player.dir == 2:
+            elif player.pos == pg.Vector2(13, 1) and player.dir == 2:
               text_talk(screen, font_text, "鍵がかかっている。")
             # 仕切りドア
-            if player.pos == pg.Vector2(10, 8) and player.dir == 1 and Door_condi:
+            elif player.pos == pg.Vector2(10, 8) and player.dir == 1 and Door_condi:
               text_talk(screen, font_text, "扉が開いた。")
               Door_condi = False
-              if RoomDoor in Map_Object_Block: Map_Object_Block.remove(
-                  RoomDoor)
-        if event.key == pg.K_ESCAPE: pg.quit(); sys.exit()
+              item.remove("部屋の鍵")
+              if RoomDoor in Map_Object_Block:
+                Map_Object_Block.remove(RoomDoor)
+            # クローゼット
+            elif (player.pos == pg.Vector2(7, 6) or player.pos == pg.Vector2(7, 7)) and player.dir == 3:
+              if closet_condi == False:
+                text_talk(screen, font_text, "南京錠で閉じられている。")
+                if "小さな鍵" in item:
+                  text_talk(screen, font_text, "小さな鍵で南京錠を開けた。")
+                  closet_condi = True
+                  item.remove("小さな鍵")
+              else:
+                if player.pos == pg.Vector2(7, 6):
+                  text_talk(screen, font_text, "クローゼットだ。私好みの服が多くかかっている。気持ち悪い。")
+                else:
+                  text_talk(screen, font_text,
+                            "クローゼットだ。赤色の服が4着、青色のジーンズが3着、革の上着が1着入っている。")
+            # 流し
+            elif player.pos == pg.Vector2(2, 6) and player.dir == 2:
+              text_talk(screen, font_text, "流しに洗い物がたまっている。")
+            # コンロ
+            elif (player.pos == pg.Vector2(5, 5) and player.dir == 1) or (player.pos == pg.Vector2(4, 6) and player.dir == 2):
+              text_talk(screen, font_text, "奥に何か光っているが取れない。")
+              if "棒磁石" in item:
+                text_talk(screen, font_text, "棒磁石を使って光っているものを引っ張った。小さな鍵を手に入れた。")
+                item.append("小さな鍵")
+                item.remove("棒磁石")
+            # 冷蔵庫
+            elif player.pos == pg.Vector2(0, 6) and player.dir == 2:
+              text_talk(screen, font_text, "冷蔵庫だ、一部腐っているものもある。")
+              text_talk(screen, font_text, "食べられそうなのはキャベツが2つとブロッコリーが4つだけだ")
+            # ゴミ箱2
+            elif player.pos == pg.Vector2(1, 6) and player.dir == 2:
+              text_talk(screen, font_text, "ゴミ箱だ。薬のごみとティッシュが入っている。")
+              text_talk(screen, font_text, "ゴミ箱の隣に小箱がおいてある。番号で開くようだ。")
+              # 番号入力機能追加
+            # 机
+            elif (player.pos == pg.Vector2(2, 11) and player.dir == 3) or (player.pos == pg.Vector2(3, 12) and player.dir == 2) or (player.pos == pg.Vector2(4, 12) and player.dir == 2) or (player.pos == pg.Vector2(5, 11) and player.dir == 1) or (player.pos == pg.Vector2(4, 10) and player.dir == 0) or (player.pos == pg.Vector2(3, 10) and player.dir == 0):
+              text_talk(screen, font_text, "白色の錠剤が3つおかれている。")
+            # 金庫
+            elif (player.pos == pg.Vector2(0, 13) and player.dir == 0) or (player.pos == pg.Vector2(1, 14) and player.dir == 1):
+              text_talk(screen, font_text, "金庫だ、暗証番号が必要らしい。")
+              # 番号入力機能追加
+            elif (player.pos == pg.Vector2(7, 14) and player.dir == 3) or (player.pos == pg.Vector2(8, 13) and player.dir == 0):
+              text_talk(screen, font_text, "テレビだ、ついていない。")
+        if event.key == pg.K_ESCAPE:
+          pg.quit()
+          sys.exit()
 
     if state == 0:
       screen.fill((0, 0, 0))
@@ -183,6 +322,8 @@ def main():
     elif state == 2:
       player.update(Map_Object_Block)
       screen.fill((100, 100, 100))
+
+      # 描画
       for f in floors:
         f.draw(screen, 'floor')
       for w in walls:
@@ -194,12 +335,27 @@ def main():
       bed.draw(screen, 'bed')
       for b in bookbox:
         b.draw(screen, 'bookstand')
-
+      door_desk.draw(screen, 'door_desk')
+      paper.draw(screen, 'paper')
+      for d in dustbox:
+        d.draw(screen, 'dustbox')
+      freezer.draw(screen, 'freezer')
+      kitchen1.draw(screen, 'kitchen1')
+      kitchen2.draw(screen, 'kitchen2')
+      kitchen3.draw(screen, 'kitchen3')
+      mirror.draw(screen, 'mirror')
+      TV.draw(screen, 'TV')
+      closet.draw(screen, 'closet')
+      moneybox.draw(screen, 'moneybox')
+      calender.draw(screen, 'calender')
       if Door_condi:
         RoomDoor.draw(screen, 'Room_door_close')
       else:
         RoomDoor.draw(screen, 'Room_door_open')
       player.draw(screen)
+
+      if item_condi:
+        item_look(screen, font_text, item)
 
     pg.display.update()
     clock.tick(12)

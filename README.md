@@ -51,31 +51,29 @@
 
 ## 詰まった方へ、答えです
 
-### <details><summary>区切り扉の鍵の場所</summary>
+<details><summary>区切り扉の鍵の場所</summary>
 
 左の本棚を調べてみてください。
 
 </details>
 
-### <details><summary>コンロの光っているものの取り方</summary>
+<details><summary>コンロの光っているものの取り方</summary>
 
 右の部屋をくまなく調べてみてください。
 
 </details>
 
-### <details><summary>小箱の番号</summary>
+<details><summary>小箱の番号</summary>
 
 何かの日付です。どこに書かれているのでしょうか。
 
 </details>
 
-### <details><summary>金庫の番号の順番</summary>
+<details><summary>金庫の番号の順番</summary>
 
 右の部屋をくまなく調べてみてください。どこか一か所だけメッセージが変わっている場所があります。
 
 </details>
-
----
 
 ## ネタバレ注意！！ エンディングについて
 
